@@ -1,0 +1,12 @@
+{
+  "apps": [
+    {
+      "name": "udpServer",
+      "script": "/app/tunnel/udp/handshakeServer.js"
+    },
+    {
+      "name": "tcpServer",
+      "script": "/app/tunnel/tcp/handshakeServer.js"
+    }
+  ]
+}

@@ -37,7 +37,14 @@ module.exports = class Server {
           httpOnly: true,
         },
       }))
+      .use(function (req, res, next) {
+        res.header('Access-Control-Allow-Origin', '*');
+        res.header('Access-Control-Allow-Methods', 'GET,PUT,POST,DELETE');
+        res.header('Access-Control-Allow-Headers', 'Content-Type, Authorization, accept, access-control-allow-origin');
 
+        if ('OPTIONS' == req.method) res.send(200);
+        else next();
+      })
       .get('/api/release', (Util.promisify(async () => {
         return RELEASE;
       })))
@@ -49,7 +56,7 @@ module.exports = class Server {
         return UI_TRAFFIC_STATS === 'true';
       })))
 
-    // Authentication
+      // Authentication
       .get('/api/session', Util.promisify(async (req) => {
         const requiresPassword = !!process.env.PASSWORD;
         const authenticated = requiresPassword
@@ -80,29 +87,29 @@ module.exports = class Server {
         debug(`New Session: ${req.session.id}`);
       }))
 
-    // WireGuard
-      .use((req, res, next) => {
-        if (!PASSWORD) {
-          return next();
-        }
+      // WireGuard
+      // .use((req, res, next) => {
+      //   if (!PASSWORD) {
+      //     return next();
+      //   }
 
-        if (req.session && req.session.authenticated) {
-          return next();
-        }
+      //   if (req.session && req.session.authenticated) {
+      //     return next();
+      //   }
 
-        if (req.path.startsWith('/api/') && req.headers['authorization']) {
-          if (bcrypt.compareSync(req.headers['authorization'], bcrypt.hashSync(PASSWORD, 10))) {
-            return next();
-          }
-          return res.status(401).json({
-            error: 'Incorrect Password',
-          });
-        }
+      //   if (req.path.startsWith('/api/') && req.headers['authorization']) {
+      //     if (bcrypt.compareSync(req.headers['authorization'], bcrypt.hashSync(PASSWORD, 10))) {
+      //       return next();
+      //     }
+      //     return res.status(401).json({
+      //       error: 'Incorrect Password',
+      //     });
+      //   }
 
-        return res.status(401).json({
-          error: 'Not Logged In',
-        });
-      })
+      //   return res.status(401).json({
+      //     error: 'Not Logged In',
+      //   });
+      // })
       .delete('/api/session', Util.promisify(async (req) => {
         const sessionId = req.session.id;
 
@@ -134,7 +141,8 @@ module.exports = class Server {
       }))
       .post('/api/wireguard/client', Util.promisify(async (req) => {
         const { name } = req.body;
-        return WireGuard.createClient({ name });
+        let client = await WireGuard.createClient({ name });
+        return client.id
       }))
       .delete('/api/wireguard/client/:clientId', Util.promisify(async (req) => {
         const { clientId } = req.params;
