@@ -120,3 +120,9 @@ And then run the `docker run -d \ ...` command above again.
 * [Using WireGuard-Easy with nginx/SSL](https://github.com/wg-easy/wg-easy/wiki/Using-WireGuard-Easy-with-nginx-SSL)
 
 For less common or specific edge-case scenarios, please refer to the detailed information provided in the [Wiki](https://github.com/wg-easy/wg-easy/wiki).
+
+docker run -d --name=morph_vpn_server --network host --restart unless-stopped morph_vpn_server:0.01
+
+sed -i "s/12301/8888/g" process.json
+sed -i "s/8088/9999/g" process.json
+"pm2-runtime", "start", "process.json"

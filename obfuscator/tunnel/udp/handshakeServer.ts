@@ -13,8 +13,8 @@ import { Obfuscator } from '../../Obfuscator';
 //   return clientStat;
 // }
 
-
-const PORT = 12301; // The port on which the initial UDP server listens
+console.log(process.env.HANDSHAKE_PORT_UDP)
+const PORT = Number(process.env.HANDSHAKE_PORT_UDP ? process.env.HANDSHAKE_PORT_UDP : 12301); // The port on which the initial UDP server listens
 const TIMEOUT_DURATION = 1200000; // Time in milliseconds after which the new UDP server shuts down if no data is received
 const LOCALWG_PORT = 51820;
 const LOCALWG_ADDRESS = '127.0.0.1';

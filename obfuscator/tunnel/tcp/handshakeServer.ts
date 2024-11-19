@@ -2,7 +2,8 @@ import * as net from 'net';
 import * as dgram from 'dgram';
 import { Obfuscator } from '../../Obfuscator';
 
-const PORT = 8080; // The port on which the initial UDP server listens
+console.log(process.env.HANDSHAKE_PORT_TCP)
+const PORT = Number(process.env.HANDSHAKE_PORT_TCP ? process.env.HANDSHAKE_PORT_TCP : 8080); // The port on which the initial UDP server listens
 const TIMEOUT_DURATION = 1200000; // Time in milliseconds after which the new UDP server shuts down if no data is received
 const LOCALWG_PORT = 51820;
 const LOCALWG_ADDRESS = '0.0.0.0';

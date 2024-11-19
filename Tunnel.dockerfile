@@ -17,4 +17,5 @@ RUN npm install pm2 -g && npm install
 EXPOSE 1-65535
 
 # Launch PM2 with the specified scripts
-CMD ["pm2-runtime", "start", "process.json"]
+CMD ["tail", "-f", "/dev/null"]
+# CMD ["pm2-runtime", "start", "process.json"]

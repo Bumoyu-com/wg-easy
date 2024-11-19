@@ -2,11 +2,17 @@
   "apps": [
     {
       "name": "udpServer",
-      "script": "/app/tunnel/udp/handshakeServer.js"
+      "script": "/app/tunnel/udp/handshakeServer.js",
+      "env": {
+        "HANDSHAKE_PORT_UDP": "12301"
+      }
     },
     {
       "name": "tcpServer",
-      "script": "/app/tunnel/tcp/handshakeServer.js"
+      "script": "/app/tunnel/tcp/handshakeServer.js",
+      "env": {
+        "HANDSHAKE_PORT_TCP": "8088"
+      }
     }
   ]
 }
