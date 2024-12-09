@@ -38,8 +38,17 @@ docker run -d --name=morph_vpn_server --network host --restart unless-stopped gz
 docker exec -t morph_vpn_server sed -i "s/12301/${port1}/g" process.json
 docker exec -t morph_vpn_server sed -i "s/8088/${port2}/g" process.json
 docker exec -dt morph_vpn_server pm2-runtime start process.json
-# docker run -d -p $port2:80 --name container2 your_image_name_2
 
+#!/bin/bash
+
+# Fetch the JSON data
+response=$(curl -s http://169.254.169.254/v1.json)
+
+# Extract the hostname using jq
+hostname=$(echo "$response" | jq -r '.hostname')
+
+# Print the hostname
+echo "Hostname: $hostname"
 # API URL and data to send (replace with actual values)
 # api_url="https://your-api-url.com/update_ports"
 # data="{\"container1_port\": \"$port1\", \"container2_port\": \"$port2\"}"
