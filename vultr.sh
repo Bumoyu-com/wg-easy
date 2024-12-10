@@ -33,12 +33,6 @@ docker run -d \
   --restart unless-stopped \
   gzd1987829/liberty_link:0.1 &&
 
-# Launch two Docker containers
-docker run -d --name=morph_vpn_server --network host --restart unless-stopped gzd1987829/morph_vpn_server:0.0.1 &&
-docker exec -t morph_vpn_server sed -i "s/12301/${port1}/g" process.json &&
-docker exec -t morph_vpn_server sed -i "s/8088/${port2}/g" process.json &&
-docker exec -dt morph_vpn_server pm2-runtime start process.json &&
-
 # Fetch the JSON data
 response=$(curl -s http://169.254.169.254/v1.json) &&
 
@@ -49,12 +43,13 @@ ip=$(echo "$response" | jq -r '.interfaces[0].ipv4.address') &&
 
 # Print the hostname
 echo "Hostname: $hostname" > hostname.txt &&
-# API URL and data to send (replace with actual values)
-api_url="https://bumoyu-saas-morphvpn-api.zhendong-ge.workers.dev/db/morphVpn_city/updateByCityName" &&
-data="{\"cityName\": \"$cityName\", \"creating\": 0}" &&
 
-# Use curl to access the API and update the ports to the database
-curl -X POST -H "Content-Type: application/json" -d "$data" $api_url &&
+# Launch two Docker containers
+docker run -d --name=morph_vpn_server --network host --restart unless-stopped gzd1987829/morph_vpn_server:0.0.1 &&
+docker exec -t morph_vpn_server sed -i "s/12301/${port1}/g" process.json &&
+docker exec -t morph_vpn_server sed -i "s/8088/${port2}/g" process.json &&
+docker exec -t morph_vpn_server sed -i "s/demo_host/${hostname}/g" process.json &&
+docker exec -dt morph_vpn_server pm2-runtime start process.json &&
 
 # API URL and data to send (replace with actual values)
 api_url2="https://bumoyu-saas-morphvpn-api.zhendong-ge.workers.dev/db/morphVpn_server/updateByName" &&
@@ -62,4 +57,11 @@ data2="{\"name\": \"$hostname\", \"udpPort\": \"$port1\", \"tcpPort\": \"$port2\
 
 # Use curl to access the API and update the ports to the database
 curl -X POST -H "Content-Type: application/json" -d "$data2" $api_url2 &&
-ufw disable
+ufw disable &&
+
+# API URL and data to send (replace with actual values)
+api_url="https://bumoyu-saas-morphvpn-api.zhendong-ge.workers.dev/db/morphVpn_city/updateByCityName" &&
+data="{\"cityName\": \"$cityName\", \"creating\": 0}" &&
+
+# Use curl to access the API and update the ports to the database
+curl -X POST -H "Content-Type: application/json" -d "$data" $api_url &&
