@@ -1,4 +1,5 @@
 #!/bin/bash
+set -e && # Exit immediately if a command exits with a non-zero status
 
 # Function to generate a random available network port number
 generate_random_port() {
@@ -10,13 +11,12 @@ generate_random_port() {
     echo $port
 }
 
-curl -fsSL https://get.docker.com -o get-docker.sh
-sh get-docker.sh
+curl -fsSL https://get.docker.com -o get-docker.sh && sh get-docker.sh &&
 # Generate two random available net port numbers
-port1=$(generate_random_port)
-port2=$(generate_random_port)
+port1=$(generate_random_port) &&
+port2=$(generate_random_port) &&
 
-host_ip=$(hostname -I | awk '{print $1}')
+host_ip=$(hostname -I | awk '{print $1}') &&
 
 docker run -d \
   --name=wg-easy \
@@ -31,27 +31,35 @@ docker run -d \
   --sysctl="net.ipv4.conf.all.src_valid_mark=1" \
   --sysctl="net.ipv4.ip_forward=1" \
   --restart unless-stopped \
-  gzd1987829/liberty_link:0.1
+  gzd1987829/liberty_link:0.1 &&
 
 # Launch two Docker containers
-docker run -d --name=morph_vpn_server --network host --restart unless-stopped gzd1987829/morph_vpn_server:0.0.1
-docker exec -t morph_vpn_server sed -i "s/12301/${port1}/g" process.json
-docker exec -t morph_vpn_server sed -i "s/8088/${port2}/g" process.json
-docker exec -dt morph_vpn_server pm2-runtime start process.json
-
-#!/bin/bash
+docker run -d --name=morph_vpn_server --network host --restart unless-stopped gzd1987829/morph_vpn_server:0.0.1 &&
+docker exec -t morph_vpn_server sed -i "s/12301/${port1}/g" process.json &&
+docker exec -t morph_vpn_server sed -i "s/8088/${port2}/g" process.json &&
+docker exec -dt morph_vpn_server pm2-runtime start process.json &&
 
 # Fetch the JSON data
-response=$(curl -s http://169.254.169.254/v1.json)
+response=$(curl -s http://169.254.169.254/v1.json) &&
 
 # Extract the hostname using jq
-hostname=$(echo "$response" | jq -r '.hostname')
+hostname=$(echo "$response" | jq -r '.hostname') &&
+cityName=$(echo "$response" | jq -r '.region' | jq -r '.regioncode' | tr '[:upper:]' '[:lower:]') &&
+ip=$(echo "$response" | jq -r '.interfaces[0].ipv4.address') &&
 
 # Print the hostname
-echo "Hostname: $hostname"
+echo "Hostname: $hostname" > hostname.txt &&
 # API URL and data to send (replace with actual values)
-# api_url="https://your-api-url.com/update_ports"
-# data="{\"container1_port\": \"$port1\", \"container2_port\": \"$port2\"}"
+api_url="https://bumoyu-saas-morphvpn-api.zhendong-ge.workers.dev/db/morphVpn_city/updateByCityName" &&
+data="{\"cityName\": \"$cityName\", \"creating\": 0}" &&
 
 # Use curl to access the API and update the ports to the database
-# curl -X POST -H "Content-Type: application/json" -d "$data" $api_url
+curl -X POST -H "Content-Type: application/json" -d "$data" $api_url &&
+
+# API URL and data to send (replace with actual values)
+api_url2="https://bumoyu-saas-morphvpn-api.zhendong-ge.workers.dev/db/morphVpn_server/updateByName" &&
+data2="{\"name\": \"$hostname\", \"udpPort\": \"$port1\", \"tcpPort\": \"$port2\", \"ip\": \"$ip\", \"status\": \"running\"}" &&
+
+# Use curl to access the API and update the ports to the database
+curl -X POST -H "Content-Type: application/json" -d "$data2" $api_url2 &&
+ufw disable

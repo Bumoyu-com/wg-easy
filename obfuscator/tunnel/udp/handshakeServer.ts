@@ -1,6 +1,6 @@
 import * as dgram from 'dgram';
 import { Obfuscator } from '../../Obfuscator';
-import { updateTraffic } from '../trafficUpdate'
+import { subTraffic, subClientNum, addClientNum } from '../updateDB'
 
 // //function to record concurrency client and max client
 // let clientStatOperation = function(ins:number) {
@@ -15,6 +15,7 @@ import { updateTraffic } from '../trafficUpdate'
 // }
 
 console.log(process.env.HANDSHAKE_PORT_UDP)
+const HOST_NAME =  process.env.HOST_NAME
 const PORT = Number(process.env.HANDSHAKE_PORT_UDP ? process.env.HANDSHAKE_PORT_UDP : 12301); // The port on which the initial UDP server listens
 const TIMEOUT_DURATION = 1200000; // Time in milliseconds after which the new UDP server shuts down if no data is received
 const LOCALWG_PORT = 51820;
@@ -46,11 +47,12 @@ function checkInactivityTimeout(udpID: string) {
             console.log(`inactivity sent to ${udpID}`)
           }
         });
-        updateTraffic(activeUserInfo.get(udpID)?.userId, activeUserInfo.get(udpID)?.traffic)
+        subTraffic(activeUserInfo.get(udpID)?.userId, activeUserInfo.get(udpID)?.traffic)
         newServer.close();
         activeServers.delete(udpID);
         activeObfuscator.delete(udpID);
         activeUserInfo.delete(udpID);
+        subClientNum(HOST_NAME)
       }
     }
   }
@@ -68,7 +70,7 @@ const activeUserInfo: Map<string, userInfo> = new Map();
 const trafficInterval = setInterval(() => {
   console.log('updating traffic for all')
   activeUserInfo.forEach((value, key) => {
-    updateTraffic(value.userId, value.traffic)
+    subTraffic(value.userId, value.traffic)
     value.traffic = 0
   });
 }, TRAFFIC_INTERVAL);
@@ -76,11 +78,12 @@ const trafficInterval = setInterval(() => {
 server.on('message', async (message, remote) => {
   try {
     if (message.toString() === 'close') {
-      updateTraffic(activeUserInfo.get(`${remote.address}:${remote.port}`)?.userId, activeUserInfo.get(`${remote.address}:${remote.port}`)?.traffic)
+      subTraffic(activeUserInfo.get(`${remote.address}:${remote.port}`)?.userId, activeUserInfo.get(`${remote.address}:${remote.port}`)?.traffic)
       activeServers.get(`${remote.address}:${remote.port}`)?.close()
       activeServers.delete(`${remote.address}:${remote.port}`);
       activeObfuscator.delete(`${remote.address}:${remote.port}`);
       activeUserInfo.delete(`${remote.address}:${remote.port}`)
+      subClientNum(HOST_NAME)
       return
     }
     console.log(`Received handshake data from ${remote.address}:${remote.port}`);
@@ -128,6 +131,7 @@ server.on('message', async (message, remote) => {
 
     // Add the new server to the active servers map
     activeServers.set(`${remote.address}:${remote.port}`, newServer);
+    addClientNum(HOST_NAME)
     lastMessageTimestamps.set(`${remote.address}:${remote.port}`, Date.now());
     // Handle messages on the new server
     let newPort: number
