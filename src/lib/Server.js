@@ -89,7 +89,11 @@ module.exports = class Server {
         setHeader(event, 'Content-Type', 'application/json');
         return RELEASE;
       }))
-
+      .use(function (req, res, next) {
+        res.header('Access-Control-Allow-Origin', '*');
+        res.header('Access-Control-Allow-Methods', 'GET,PUT,POST,DELETE');
+        res.header('Access-Control-Allow-Headers', 'Content-Type, Authorization, accept, access-control-allow-origin');
+      })
       .get('/api/lang', defineEventHandler((event) => {
         setHeader(event, 'Content-Type', 'application/json');
         return `"${LANG}"`;
@@ -191,9 +195,9 @@ module.exports = class Server {
           return next();
         }
 
-        if (req.session && req.session.authenticated) {
-          return next();
-        }
+        //   if (req.session && req.session.authenticated) {
+        //     return next();
+        //   }
 
         if (req.url.startsWith('/api/') && req.headers['authorization']) {
           if (isPasswordValid(req.headers['authorization'], PASSWORD_HASH)) {
@@ -408,7 +412,7 @@ module.exports = class Server {
           getMeta: async (id) => {
             const filePath = safePathJoin(publicDir, id);
 
-            const stats = await stat(filePath).catch(() => {});
+            const stats = await stat(filePath).catch(() => { });
             if (!stats || !stats.isFile()) {
               return;
             }
@@ -438,4 +442,4 @@ module.exports = class Server {
     cronJobEveryMinute();
   }
 
-};
+}
