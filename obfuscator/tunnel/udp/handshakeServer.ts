@@ -48,8 +48,9 @@ function checkInactivityTimeout(udpID: string) {
             console.log(`inactivity sent to ${udpID}`)
           }
         });
+        let userId_temp = activeUserInfo.get(udpID)?.userId
         subTraffic(activeUserInfo.get(udpID)?.userId, activeUserInfo.get(udpID)?.traffic)
-        activeUserInfo.get(udpID)?.traffic = 0
+        activeUserInfo.set(udpID, { userId: userId_temp, traffic: 0 })
         newServer.close();
         activeServers.delete(udpID);
         activeObfuscator.delete(udpID);
@@ -62,7 +63,7 @@ function checkInactivityTimeout(udpID: string) {
 
 // Create a map to store active UDP servers for each remote address
 interface userInfo {
-  userId: string,
+  userId: string | undefined,
   traffic: number
 }
 
@@ -80,8 +81,9 @@ const trafficInterval = setInterval(() => {
 server.on('message', async (message, remote) => {
   try {
     if (message.toString() === 'close') {
+      let userId_temp = activeUserInfo.get(`${remote.address}:${remote.port}`)?.userId
       subTraffic(activeUserInfo.get(`${remote.address}:${remote.port}`)?.userId, activeUserInfo.get(`${remote.address}:${remote.port}`)?.traffic)
-      activeUserInfo.get(`${remote.address}:${remote.port}`)?.traffic = 0
+      activeUserInfo.set(`${remote.address}:${remote.port}`, { userId: userId_temp, traffic: 0 })
       activeServers.get(`${remote.address}:${remote.port}`)?.close()
       activeServers.delete(`${remote.address}:${remote.port}`);
       activeObfuscator.delete(`${remote.address}:${remote.port}`);
