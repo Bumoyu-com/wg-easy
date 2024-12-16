@@ -49,6 +49,7 @@ function checkInactivityTimeout(udpID: string) {
           }
         });
         subTraffic(activeUserInfo.get(udpID)?.userId, activeUserInfo.get(udpID)?.traffic)
+        activeUserInfo.get(udpID)?.traffic = 0
         newServer.close();
         activeServers.delete(udpID);
         activeObfuscator.delete(udpID);
@@ -80,6 +81,7 @@ server.on('message', async (message, remote) => {
   try {
     if (message.toString() === 'close') {
       subTraffic(activeUserInfo.get(`${remote.address}:${remote.port}`)?.userId, activeUserInfo.get(`${remote.address}:${remote.port}`)?.traffic)
+      activeUserInfo.get(`${remote.address}:${remote.port}`)?.traffic = 0
       activeServers.get(`${remote.address}:${remote.port}`)?.close()
       activeServers.delete(`${remote.address}:${remote.port}`);
       activeObfuscator.delete(`${remote.address}:${remote.port}`);
