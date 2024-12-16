@@ -1,6 +1,7 @@
 import * as dgram from 'dgram';
 import { Obfuscator } from '../../Obfuscator';
 import { subTraffic, subClientNum, addClientNum } from '../updateDB'
+import { Encryptor } from '../encryptor'
 
 // //function to record concurrency client and max client
 // let clientStatOperation = function(ins:number) {
