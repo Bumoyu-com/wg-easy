@@ -1,11 +1,11 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
 function reverseBits(input, keyArray, initor) {
-    var reversed = new Uint8Array(input.length);
-    for (var i = 0; i < input.length; i++) {
-        var byte = input[i];
-        var reversedByte = 0;
-        for (var j = 0; j < 8; j++) {
+    const reversed = new Uint8Array(input.length);
+    for (let i = 0; i < input.length; i++) {
+        let byte = input[i];
+        let reversedByte = 0;
+        for (let j = 0; j < 8; j++) {
             reversedByte <<= 1;
             reversedByte |= byte & 1;
             byte >>= 1;
@@ -15,12 +15,12 @@ function reverseBits(input, keyArray, initor) {
     return reversed;
 }
 function de_reverseBits(input, keyArray, initor) {
-    var length = input.length;
-    var deobfuscated = new Uint8Array(length);
-    for (var i = 0; i < length; i++) {
-        var value = input[i];
-        var result = 0;
-        for (var j = 0; j < 8; j++) {
+    const length = input.length;
+    const deobfuscated = new Uint8Array(length);
+    for (let i = 0; i < length; i++) {
+        let value = input[i];
+        let result = 0;
+        for (let j = 0; j < 8; j++) {
             result = (result << 1) | (value & 1);
             value >>= 1;
         }
@@ -28,7 +28,7 @@ function de_reverseBits(input, keyArray, initor) {
     }
     return deobfuscated;
 }
-var funPair = {
+let funPair = {
     obfuscation: reverseBits,
     deobfuscation: de_reverseBits
 };

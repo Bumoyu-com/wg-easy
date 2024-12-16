@@ -3,6 +3,7 @@
 const path = require('path');
 const bcrypt = require('bcryptjs');
 const crypto = require('node:crypto');
+const cors = require('cors');
 
 const express = require('express');
 const expressSession = require('express-session');
@@ -27,6 +28,7 @@ module.exports = class Server {
     // Express
     this.app = express()
       .disable('etag')
+      .use(cors())
       .use('/', express.static(path.join(__dirname, '..', 'www')))
       .use(express.json())
       .use(expressSession({

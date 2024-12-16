@@ -1,9 +1,9 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
 function swapNeighboringBytes(input, keyArray, initor) {
-    var length = input.length;
-    var swapped = new Uint8Array(length);
-    for (var i = 0; i < length - 1; i += 2) {
+    const length = input.length;
+    const swapped = new Uint8Array(length);
+    for (let i = 0; i < length - 1; i += 2) {
         swapped[i] = input[i + 1];
         swapped[i + 1] = input[i];
     }
@@ -12,7 +12,7 @@ function swapNeighboringBytes(input, keyArray, initor) {
     }
     return swapped;
 }
-var funPair = {
+let funPair = {
     obfuscation: swapNeighboringBytes,
     deobfuscation: swapNeighboringBytes
 };

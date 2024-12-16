@@ -1,59 +1,80 @@
 "use strict";
+var __createBinding = (this && this.__createBinding) || (Object.create ? (function(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    var desc = Object.getOwnPropertyDescriptor(m, k);
+    if (!desc || ("get" in desc ? !m.__esModule : desc.writable || desc.configurable)) {
+      desc = { enumerable: true, get: function() { return m[k]; } };
+    }
+    Object.defineProperty(o, k2, desc);
+}) : (function(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    o[k2] = m[k];
+}));
+var __setModuleDefault = (this && this.__setModuleDefault) || (Object.create ? (function(o, v) {
+    Object.defineProperty(o, "default", { enumerable: true, value: v });
+}) : function(o, v) {
+    o["default"] = v;
+});
+var __importStar = (this && this.__importStar) || function (mod) {
+    if (mod && mod.__esModule) return mod;
+    var result = {};
+    if (mod != null) for (var k in mod) if (k !== "default" && Object.prototype.hasOwnProperty.call(mod, k)) __createBinding(result, mod, k);
+    __setModuleDefault(result, mod);
+    return result;
+};
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.Obfuscator = void 0;
-var ObfuscationFunctionHouse_1 = require("./ObfuscationFunctionHouse");
-var crypto = require("crypto");
-var DEBUG = false;
-var Obfuscator = /** @class */ (function () {
-    function Obfuscator(key, obfuscationLayer, paddingLength, funInitor) {
+const ObfuscationFunctionHouse_1 = require("./ObfuscationFunctionHouse");
+const crypto = __importStar(require("crypto"));
+const DEBUG = false;
+class Obfuscator {
+    constructor(key, obfuscationLayer, paddingLength, funInitor) {
         this.key = key;
         this.paddingLength = paddingLength;
         this.obfuscationHouse = new ObfuscationFunctionHouse_1.ObfuscationFunctionHouse(obfuscationLayer, funInitor);
         this.obFunCombosLength = this.obfuscationHouse.getfunctionPairsIndexCombos().length;
     }
-    Obfuscator.prototype.setKey = function (newKey) {
+    setKey(newKey) {
         this.key = newKey;
-    };
-    Obfuscator.prototype.generateKeyArray = function (length) {
-        var keyArray = new Uint8Array(length);
-        for (var i = 0; i < length; i++) {
+    }
+    generateKeyArray(length) {
+        const keyArray = new Uint8Array(length);
+        for (let i = 0; i < length; i++) {
             keyArray[i] = (this.key + i * 37) % 256;
         }
         return keyArray;
-    };
-    Obfuscator.prototype.randomPadding = function (length) {
+    }
+    randomPadding(length) {
         return new Uint8Array(crypto.randomBytes(length).buffer);
-    };
-    Obfuscator.prototype.concatenateUint8Arrays = function (arrays) {
-        var totalLength = arrays.reduce(function (acc, array) { return acc + array.length; }, 0);
-        var result = new Uint8Array(totalLength);
-        var offset = 0;
-        for (var _i = 0, arrays_1 = arrays; _i < arrays_1.length; _i++) {
-            var array = arrays_1[_i];
+    }
+    concatenateUint8Arrays(arrays) {
+        const totalLength = arrays.reduce((acc, array) => acc + array.length, 0);
+        const result = new Uint8Array(totalLength);
+        let offset = 0;
+        for (const array of arrays) {
             result.set(array, offset);
             offset += array.length;
         }
         return result;
-    };
-    Obfuscator.prototype.extractHeaderAndBody = function (input) {
-        var header = new Uint8Array(3);
-        var body = new Uint8Array(input.length - 3 - input[2]);
-        for (var i = 0; i < 3; i++) {
+    }
+    extractHeaderAndBody(input) {
+        const header = new Uint8Array(3);
+        const body = new Uint8Array(input.length - 3 - input[2]);
+        for (let i = 0; i < 3; i++) {
             header[i] = input[i];
         }
-        for (var i = 0; i < body.length; i++) {
+        for (let i = 0; i < body.length; i++) {
             body[i] = input[i + 3];
         }
-        return { header: header, body: body };
-    };
-    Obfuscator.prototype.preObfuscation = function (buffer, functions) {
-        var obfuscatedData = new Uint8Array(buffer);
-        var keyArray = this.generateKeyArray(obfuscatedData.length);
+        return { header, body };
+    }
+    preObfuscation(buffer, functions) {
+        let obfuscatedData = new Uint8Array(buffer);
+        let keyArray = this.generateKeyArray(obfuscatedData.length);
         if (DEBUG) {
             console.log('\n\n\n');
         }
-        for (var _i = 0, functions_1 = functions; _i < functions_1.length; _i++) {
-            var func = functions_1[_i];
+        for (const func of functions) {
             if (DEBUG) {
                 console.log('Original Data:', obfuscatedData);
             }
@@ -65,14 +86,14 @@ var Obfuscator = /** @class */ (function () {
             }
         }
         return obfuscatedData;
-    };
-    Obfuscator.prototype.preDeobfuscation = function (obfuscated, functions) {
-        var deobfuscatedData = new Uint8Array(obfuscated);
-        var keyArray = this.generateKeyArray(deobfuscatedData.length);
+    }
+    preDeobfuscation(obfuscated, functions) {
+        let deobfuscatedData = new Uint8Array(obfuscated);
+        let keyArray = this.generateKeyArray(deobfuscatedData.length);
         if (DEBUG) {
             console.log('\n\n\n');
         }
-        for (var i = functions.length - 1; i >= 0; i--) {
+        for (let i = functions.length - 1; i >= 0; i--) {
             if (DEBUG) {
                 console.log('Original Data:', deobfuscatedData);
             }
@@ -84,40 +105,39 @@ var Obfuscator = /** @class */ (function () {
             }
         }
         return deobfuscatedData;
-    };
-    Obfuscator.prototype.obfuscation = function (data) {
-        var that = this;
-        var header = new Uint8Array(crypto.randomBytes(3).buffer);
-        var fnComboIndex = (header[0] * header[1]) % this.obFunCombosLength;
-        var fnCombo = this.obfuscationHouse.getfunctionPairsIndexCombos();
-        var obfuscatedData = this.preObfuscation(data, fnCombo[fnComboIndex].map(function (it, idx) {
+    }
+    obfuscation(data) {
+        let that = this;
+        let header = new Uint8Array(crypto.randomBytes(3).buffer);
+        let fnComboIndex = (header[0] * header[1]) % this.obFunCombosLength;
+        let fnCombo = this.obfuscationHouse.getfunctionPairsIndexCombos();
+        let obfuscatedData = this.preObfuscation(data, fnCombo[fnComboIndex].map((it, idx) => {
             return that.obfuscationHouse.functionPairs[it];
         }));
         // Generate random padding length
-        var paddingLength = Math.floor(Math.random() * this.paddingLength) + 1;
+        const paddingLength = Math.floor(Math.random() * this.paddingLength) + 1;
         // Store padding length in header
         header[2] = paddingLength;
         // Generate random padding
-        var padding = this.randomPadding(paddingLength);
+        const padding = this.randomPadding(paddingLength);
         // Concatenate with new padding  
-        var result = this.concatenateUint8Arrays([
+        let result = this.concatenateUint8Arrays([
             header,
             obfuscatedData,
             padding
         ]);
         return result;
-    };
-    Obfuscator.prototype.deobfuscation = function (data) {
-        var that = this;
-        var input = new Uint8Array(data);
-        var _a = this.extractHeaderAndBody(input), header = _a.header, body = _a.body;
-        var fnComboIndex = (header[0] * header[1]) % this.obFunCombosLength;
-        var fnCombo = this.obfuscationHouse.getfunctionPairsIndexCombos();
-        var deObfuscatedData = this.preDeobfuscation(body.buffer, fnCombo[fnComboIndex].map(function (it, idx) {
+    }
+    deobfuscation(data) {
+        let that = this;
+        const input = new Uint8Array(data);
+        const { header, body } = this.extractHeaderAndBody(input);
+        let fnComboIndex = (header[0] * header[1]) % this.obFunCombosLength;
+        let fnCombo = this.obfuscationHouse.getfunctionPairsIndexCombos();
+        let deObfuscatedData = this.preDeobfuscation(body.buffer, fnCombo[fnComboIndex].map((it, idx) => {
             return that.obfuscationHouse.functionPairs[it];
         }));
         return deObfuscatedData;
-    };
-    return Obfuscator;
-}());
+    }
+}
 exports.Obfuscator = Obfuscator;

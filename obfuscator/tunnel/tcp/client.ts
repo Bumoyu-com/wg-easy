@@ -260,7 +260,7 @@ export function startTCPClient(remoteAddress: string): Promise<void> {
       }
     })
 
-    client.on('error', (error) => {
+    client.on('error', (error : any) => {
       console.error('Socket error:', error);
       // Handle the error gracefully, e.g., close the socket
       client.destroy(); // Close the socket to prevent crashing

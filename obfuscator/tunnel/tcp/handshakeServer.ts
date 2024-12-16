@@ -17,7 +17,7 @@ const separatorBuffer = Buffer.alloc(4);
 // Write the constant value into the Buffer
 separatorBuffer.writeUInt32LE(constantValue, 0); 
 
-function sendBinaryInfoMessage(client, message) {
+function sendBinaryInfoMessage(client : any, message : any) {
     const headerBuffer = Buffer.alloc(1);
     headerBuffer.writeUInt8(MESSAGE_TYPE_INACTIVITY);
     const messageBuffer = Buffer.from(message);
@@ -25,14 +25,14 @@ function sendBinaryInfoMessage(client, message) {
     client.write(binaryMessage);
 }
 
-function sendBinaryHandshake(client) {
+function sendBinaryHandshake(client : any) {
     const headerBuffer = Buffer.alloc(1);
     headerBuffer.writeUInt8(MESSAGE_TYPE_HANDSHAKE);
     const binaryMessage = Buffer.concat([headerBuffer, separatorBuffer]);
     client.write(binaryMessage);
 }
 
-function sendBinaryHeartbeat(client) {
+function sendBinaryHeartbeat(client : any) {
     const headerBuffer = Buffer.alloc(1);
     headerBuffer.writeUInt8(MESSAGE_TYPE_HEARTBEAT);
     const binaryMessage = Buffer.concat([headerBuffer, separatorBuffer]);

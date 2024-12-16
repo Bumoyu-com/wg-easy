@@ -78,6 +78,7 @@ const trafficInterval = setInterval(() => {
 server.on('message', async (message, remote) => {
   try {
     if (message.toString() === 'close') {
+      console.log(`Received close msg from ${remote.address}:${remote.port}`)
       subTraffic(activeUserInfo.get(`${remote.address}:${remote.port}`)?.userId, activeUserInfo.get(`${remote.address}:${remote.port}`)?.traffic)
       activeServers.get(`${remote.address}:${remote.port}`)?.close()
       activeServers.delete(`${remote.address}:${remote.port}`);

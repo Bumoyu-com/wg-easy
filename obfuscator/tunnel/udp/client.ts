@@ -2,12 +2,12 @@ import * as dgram from 'dgram';
 import { Obfuscator } from '../../Obfuscator';
 import { fnInitor } from '../../fnInitor';
 
-let client
+let client : any
 let handshakeInterval: NodeJS.Timeout; // Declare handshakeInterval variable
 let heartBeatInterval: NodeJS.Timeout; // Declare heartBeatInterval variable
 let clientOpenStatus = false
-let HANDSHAKE_SERVER_ADDRESS
-let HANDSHAKE_SERVER_PORT
+let HANDSHAKE_SERVER_ADDRESS : string
+let HANDSHAKE_SERVER_PORT : number
 
 export function startUdpClient(remoteAddress: string): Promise<number> {
   return new Promise<number>((resolve, reject) => {
@@ -42,7 +42,7 @@ export function startUdpClient(remoteAddress: string): Promise<number> {
       clearInterval(heartBeatInterval);
     }
     if (client && clientOpenStatus) {
-      client.send('close', 0, 'close'.length, HANDSHAKE_SERVER_PORT, HANDSHAKE_SERVER_ADDRESS, (error) => {
+      client.send('close', 0, 'close'.length, HANDSHAKE_SERVER_PORT, HANDSHAKE_SERVER_ADDRESS, (error : any) => {
         if (error) {
           console.error('Failed to send handshake data:', error);
         } else {
@@ -63,7 +63,7 @@ export function startUdpClient(remoteAddress: string): Promise<number> {
       const message = Buffer.from(JSON.stringify(handshakeData));
 
       // Send the handshake data to the handshake server
-      client.send(message, 0, message.length, HANDSHAKE_SERVER_PORT, HANDSHAKE_SERVER_ADDRESS, (error) => {
+      client.send(message, 0, message.length, HANDSHAKE_SERVER_PORT, HANDSHAKE_SERVER_ADDRESS, (error : any) => {
         if (error) {
           console.error('Failed to send handshake data:', error);
         } else {
@@ -73,7 +73,7 @@ export function startUdpClient(remoteAddress: string): Promise<number> {
     }
 
     // Handle incoming messages from the handshake server and the new UDP server
-    client.on('message', (message, remote) => {
+    client.on('message', (message : any, remote : any) => {
       console.log(`Received data from ${remote.address}:${remote.port}`);
       if (remote.port === HANDSHAKE_SERVER_PORT) {
         // Message received from the handshake server
@@ -85,7 +85,7 @@ export function startUdpClient(remoteAddress: string): Promise<number> {
           if (heartBeatInterval) {
             clearInterval(heartBeatInterval);
           }
-          client.send('close', 0, 'close'.length, HANDSHAKE_SERVER_PORT, HANDSHAKE_SERVER_ADDRESS, (error) => {
+          client.send('close', 0, 'close'.length, HANDSHAKE_SERVER_PORT, HANDSHAKE_SERVER_ADDRESS, (error  : any) => {
             if (error) {
               console.error('Failed to send handshake data:', error);
             } else {
@@ -102,7 +102,7 @@ export function startUdpClient(remoteAddress: string): Promise<number> {
           if (heartBeatInterval) {
             clearInterval(heartBeatInterval);
           }
-          client.send('close', 0, 'close'.length, HANDSHAKE_SERVER_PORT, HANDSHAKE_SERVER_ADDRESS, (error) => {
+          client.send('close', 0, 'close'.length, HANDSHAKE_SERVER_PORT, HANDSHAKE_SERVER_ADDRESS, (error : any) => {
             if (error) {
               console.error('Failed to send handshake data:', error);
             } else {
@@ -120,7 +120,7 @@ export function startUdpClient(remoteAddress: string): Promise<number> {
             clearInterval(handshakeInterval);
           }
           heartBeatInterval = setInterval(() => {
-            client.send(heartbeatData, 0, heartbeatData.length, newServerPort, HANDSHAKE_SERVER_ADDRESS, (error) => {
+            client.send(heartbeatData, 0, heartbeatData.length, newServerPort, HANDSHAKE_SERVER_ADDRESS, (error : any) => {
               if (error) {
                 console.error('Failed to send data to new server:', error);
               } else {
@@ -152,7 +152,7 @@ export function startUdpClient(remoteAddress: string): Promise<number> {
     function sendToNewServer(message: ArrayBuffer) {
       if (newServerPort) {
         const obfuscatedData = obfuscator.obfuscation(message);
-        client.send(obfuscatedData, 0, obfuscatedData.length, newServerPort, HANDSHAKE_SERVER_ADDRESS, (error) => {
+        client.send(obfuscatedData, 0, obfuscatedData.length, newServerPort, HANDSHAKE_SERVER_ADDRESS, (error : any) => {
           if (error) {
             console.error('Failed to send data to new server:', error);
           } else {
@@ -167,7 +167,7 @@ export function startUdpClient(remoteAddress: string): Promise<number> {
     // Function to send data to the new UDP server
     function sendToLocalWG(message: ArrayBuffer) {
       const deobfuscatedData = obfuscator.deobfuscation(message);
-      client.send(deobfuscatedData, 0, deobfuscatedData.length, LOCALWG_PORT, LOCALWG_ADDRESS, (error) => {
+      client.send(deobfuscatedData, 0, deobfuscatedData.length, LOCALWG_PORT, LOCALWG_ADDRESS, (error : any) => {
         if (error) {
           console.error('Failed to send data to local-wg server:', error);
         } else {
@@ -196,7 +196,7 @@ export function startUdpClient(remoteAddress: string): Promise<number> {
         clientRetry++
         if (clientRetry >= MAX_RETRIES) {
           clearInterval(handshakeInterval);
-          client.send('close', 0, 'close'.length, HANDSHAKE_SERVER_PORT, HANDSHAKE_SERVER_ADDRESS, (error) => {
+          client.send('close', 0, 'close'.length, HANDSHAKE_SERVER_PORT, HANDSHAKE_SERVER_ADDRESS, (error : any) => {
             if (error) {
               console.error('Failed to send handshake data:', error);
             } else {
@@ -223,7 +223,7 @@ export function stopUdpClient(): Promise<void> {
     }
 
     if (client && clientOpenStatus) {
-      client.send('close', 0, 'close'.length, HANDSHAKE_SERVER_PORT, HANDSHAKE_SERVER_ADDRESS, (error) => {
+      client.send('close', 0, 'close'.length, HANDSHAKE_SERVER_PORT, HANDSHAKE_SERVER_ADDRESS, (error : any) => {
         if (error) {
           console.error('Failed to send handshake data:', error);
         } else {

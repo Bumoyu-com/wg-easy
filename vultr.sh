@@ -64,4 +64,4 @@ api_url="https://bumoyu-saas-morphvpn-api.zhendong-ge.workers.dev/db/morphVpn_ci
 data="{\"cityName\": \"$cityName\", \"creating\": 0}" &&
 
 # Use curl to access the API and update the ports to the database
-curl -X POST -H "Content-Type: application/json" -d "$data" $api_url &&
+curl -X POST -H "Content-Type: application/json" -d "$data" $api_url
