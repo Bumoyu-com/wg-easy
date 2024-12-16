@@ -1,0 +1,26 @@
+{
+  "apps": [
+    {
+      "name": "udpServer",
+      "script": "/app/tunnel/udp/handshakeServer.js",
+      "env": {
+        "HANDSHAKE_PORT_UDP": "12301",
+        "HOST_NAME" : "demo_host",
+        "SUB_TRAFFIC_URL" : "https://bumoyu-saas-morphvpn-api.zhendong-ge.workers.dev/db/morphVpn_user/subTrafficByUserId",
+        "ADD_CLIENTNUM_URL" : "https://bumoyu-saas-morphvpn-api.zhendong-ge.workers.dev/db/morphVpn_server/addClientNumByName",
+        "SUB_CLIENTNUM_URL" : "https://bumoyu-saas-morphvpn-api.zhendong-ge.workers.dev/db/morphVpn_server/subClientNumByName"
+      }
+    },
+    {
+      "name": "tcpServer",
+      "script": "/app/tunnel/tcp/handshakeServer.js",
+      "env": {
+        "HANDSHAKE_PORT_TCP": "8088",
+        "HOST_NAME" : "demo_host",
+        "SUB_TRAFFIC_URL" : "https://bumoyu-saas-morphvpn-api.zhendong-ge.workers.dev/db/morphVpn_user/subTrafficByUserId",
+        "ADD_CLIENTNUM_URL" : "https://bumoyu-saas-morphvpn-api.zhendong-ge.workers.dev/db/morphVpn_server/addClientNumByName",
+        "SUB_CLIENTNUM_URL" : "https://bumoyu-saas-morphvpn-api.zhendong-ge.workers.dev/db/morphVpn_server/subClientNumByName"
+      }
+    }
+  ]
+}
