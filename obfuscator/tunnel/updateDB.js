@@ -12,7 +12,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.subClientNum = exports.addClientNum = exports.subTraffic = void 0;
+exports.updateServerInfo = exports.subClientNum = exports.addClientNum = exports.subTraffic = void 0;
 const axios_1 = __importDefault(require("axios"));
 const subTrafficUrl = process.env.SUB_TRAFFIC_URL;
 const subTraffic = (userId, traffic) => __awaiter(void 0, void 0, void 0, function* () {
@@ -75,3 +75,28 @@ const subClientNum = (name) => __awaiter(void 0, void 0, void 0, function* () {
     }
 });
 exports.subClientNum = subClientNum;
+const updateServerInfoUrl = process.env.UPDATE_SERVERINFO_URL;
+const updateServerInfo = (name, ip, udpPort, tcpPort, info) => __awaiter(void 0, void 0, void 0, function* () {
+    if (name) {
+        yield (0, axios_1.default)({
+            method: 'post',
+            url: updateServerInfoUrl,
+            data: {
+                name: name,
+                ip: ip,
+                udpPort: udpPort.toString(),
+                tcpPort: tcpPort.toString(),
+                info: info,
+                status: 'running'
+            }
+        })
+            .then(function (response) {
+            // You can now work with the JSON response data directly
+            console.log(response.data);
+        })
+            .catch(function (error) {
+            console.error('axios error：', error);
+        });
+    }
+});
+exports.updateServerInfo = updateServerInfo;

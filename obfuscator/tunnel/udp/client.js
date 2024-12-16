@@ -35,10 +35,12 @@ let heartBeatInterval; // Declare heartBeatInterval variable
 let clientOpenStatus = false;
 let HANDSHAKE_SERVER_ADDRESS;
 let HANDSHAKE_SERVER_PORT;
+let userId;
 function startUdpClient(remoteAddress) {
     return new Promise((resolve, reject) => {
-        HANDSHAKE_SERVER_ADDRESS = remoteAddress; // Handshake server address
-        HANDSHAKE_SERVER_PORT = 12301; // Handshake server port
+        HANDSHAKE_SERVER_ADDRESS = remoteAddress.split(':')[0]; // Handshake server address
+        HANDSHAKE_SERVER_PORT = Number(remoteAddress.split(':')[1]); // Handshake server port
+        userId = remoteAddress.split(':')[2];
         const LOCALWG_ADDRESS = '127.0.0.1';
         const LOCALWG_PORT = 51820;
         const MAX_RETRIES = 5;
@@ -48,7 +50,8 @@ function startUdpClient(remoteAddress) {
             key: Math.floor(Math.random() * 256),
             obfuscationLayer: 3,
             randomPadding: 8,
-            fnInitor: (0, fnInitor_1.fnInitor)()
+            fnInitor: (0, fnInitor_1.fnInitor)(),
+            userId: userId
         };
         // Create an instance of the Obfuscator class
         const obfuscator = new Obfuscator_1.Obfuscator(handshakeData.key, handshakeData.obfuscationLayer, handshakeData.randomPadding, handshakeData.fnInitor);
@@ -89,7 +92,7 @@ function startUdpClient(remoteAddress) {
         }
         // Handle incoming messages from the handshake server and the new UDP server
         client.on('message', (message, remote) => {
-            console.log(`Received data from ${remote.address}:${remote.port}`);
+            //console.log(`Received data from ${remote.address}:${remote.port}`);
             if (remote.port === HANDSHAKE_SERVER_PORT) {
                 // Message received from the handshake server
                 if (message.toString() === "inactivity") {
@@ -170,12 +173,13 @@ function startUdpClient(remoteAddress) {
         function sendToNewServer(message) {
             if (newServerPort) {
                 const obfuscatedData = obfuscator.obfuscation(message);
+                //console.log(HANDSHAKE_SERVER_ADDRESS + ":" + newServerPort);
                 client.send(obfuscatedData, 0, obfuscatedData.length, newServerPort, HANDSHAKE_SERVER_ADDRESS, (error) => {
                     if (error) {
                         console.error('Failed to send data to new server:', error);
                     }
                     else {
-                        console.log('Data sent to new server');
+                        //console.log('Data sent to new server');
                     }
                 });
             }
@@ -191,7 +195,7 @@ function startUdpClient(remoteAddress) {
                     console.error('Failed to send data to local-wg server:', error);
                 }
                 else {
-                    console.log('Data sent to local-wg server');
+                    //console.log('Data sent to local-wg server');
                 }
             });
         }
@@ -233,25 +237,29 @@ function stopUdpClient() {
         // Stop sending handshake data and heartbeats
         if (handshakeInterval) {
             clearInterval(handshakeInterval);
+            console.log('handshakeInterval stopping...');
         }
         if (heartBeatInterval) {
             clearInterval(heartBeatInterval);
+            console.log('heartBeatInterval stopping...');
         }
         if (client && clientOpenStatus) {
+            console.log('client sending close tag...');
             client.send('close', 0, 'close'.length, HANDSHAKE_SERVER_PORT, HANDSHAKE_SERVER_ADDRESS, (error) => {
                 if (error) {
                     console.error('Failed to send handshake data:', error);
                 }
                 else {
-                    console.log('Handshake data sent to the handshake server');
+                    console.log('close msg sent to the handshake server');
+                    // Close the UDP socket
+                    client.close(() => {
+                        console.log('client closed');
+                        // Unreference the socket to allow the application to exit even if the socket is still open
+                        client.unref();
+                        // Resolve the promise to indicate that the socket has been closed and destroyed
+                        resolve();
+                    });
                 }
-            });
-            // Close the UDP socket
-            client.close(() => {
-                // Unreference the socket to allow the application to exit even if the socket is still open
-                client.unref();
-                // Resolve the promise to indicate that the socket has been closed and destroyed
-                resolve();
             });
         }
         else {

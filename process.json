@@ -8,7 +8,10 @@
         "HOST_NAME" : "demo_host",
         "SUB_TRAFFIC_URL" : "https://bumoyu-saas-morphvpn-api.zhendong-ge.workers.dev/db/morphVpn_user/subTrafficByUserId",
         "ADD_CLIENTNUM_URL" : "https://bumoyu-saas-morphvpn-api.zhendong-ge.workers.dev/db/morphVpn_server/addClientNumByName",
-        "SUB_CLIENTNUM_URL" : "https://bumoyu-saas-morphvpn-api.zhendong-ge.workers.dev/db/morphVpn_server/subClientNumByName"
+        "SUB_CLIENTNUM_URL" : "https://bumoyu-saas-morphvpn-api.zhendong-ge.workers.dev/db/morphVpn_server/subClientNumByName",
+        "HOST_IP" : "127.0.0.1",
+        "UPDATE_SERVERINFO_URL" : "https://bumoyu-saas-morphvpn-api.zhendong-ge.workers.dev/db/morphVpn_server/updateByName",
+        "PASSWORD" : "ULTzUl/OIfjDtbmr1q"
       }
     },
     {
@@ -19,7 +22,10 @@
         "HOST_NAME" : "demo_host",
         "SUB_TRAFFIC_URL" : "https://bumoyu-saas-morphvpn-api.zhendong-ge.workers.dev/db/morphVpn_user/subTrafficByUserId",
         "ADD_CLIENTNUM_URL" : "https://bumoyu-saas-morphvpn-api.zhendong-ge.workers.dev/db/morphVpn_server/addClientNumByName",
-        "SUB_CLIENTNUM_URL" : "https://bumoyu-saas-morphvpn-api.zhendong-ge.workers.dev/db/morphVpn_server/subClientNumByName"
+        "SUB_CLIENTNUM_URL" : "https://bumoyu-saas-morphvpn-api.zhendong-ge.workers.dev/db/morphVpn_server/subClientNumByName",
+        "HOST_IP" : "127.0.0.1",
+        "UPDATE_SERVERINFO_URL" : "https://bumoyu-saas-morphvpn-api.zhendong-ge.workers.dev/db/morphVpn_server/updateByName",
+        "PASSWORD" : "ULTzUl/OIfjDtbmr1q"
       }
     }
   ]

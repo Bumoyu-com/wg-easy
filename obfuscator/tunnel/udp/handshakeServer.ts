@@ -1,6 +1,7 @@
 import * as dgram from 'dgram';
 import { Obfuscator } from '../../Obfuscator';
-import { subTraffic, subClientNum, addClientNum } from '../updateDB'
+import { subTraffic, subClientNum, addClientNum, updateServerInfo } from '../updateDB'
+import { Encryptor } from '../encryptor'
 
 // //function to record concurrency client and max client
 // let clientStatOperation = function(ins:number) {
@@ -15,16 +16,19 @@ import { subTraffic, subClientNum, addClientNum } from '../updateDB'
 // }
 
 console.log(process.env.HANDSHAKE_PORT_UDP)
-const HOST_NAME =  process.env.HOST_NAME
+const HOST_NAME = process.env.HOST_NAME
+const HOST_IP = process.env.HOST_IP
 const PORT = Number(process.env.HANDSHAKE_PORT_UDP ? process.env.HANDSHAKE_PORT_UDP : 12301); // The port on which the initial UDP server listens
 const TIMEOUT_DURATION = 1200000; // Time in milliseconds after which the new UDP server shuts down if no data is received
 const LOCALWG_PORT = 51820;
 const LOCALWG_ADDRESS = '127.0.0.1';
 const TRAFFIC_INTERVAL = 600000;
-
+const PASSWORD = process.env.PASSWORD
 
 // Create a UDP server
 const server = dgram.createSocket('udp4');
+const encryptor = new Encryptor(PASSWORD);
+updateServerInfo(HOST_NAME, HOST_IP, PORT, 8088, encryptor.getPublicKey())
 
 // Map to store the last received message timestamp for each remote address
 const lastMessageTimestamps: Map<string, number> = new Map();
@@ -38,7 +42,12 @@ function checkInactivityTimeout(udpID: string) {
       console.log(`Shutting down UDP server for ${udpID} due to inactivity`);
       const newServer = activeServers.get(udpID);
       if (newServer) {
-        let msg = "inactivity"
+        let remotePublicKey = activeUserPublicKey.get(udpID)
+        if (!remotePublicKey) {
+          console.error(`Failed to get public key for ${udpID}`);
+          return -1
+        }
+        let msg = encryptor.finalEncrypt("inactivity", remotePublicKey)
         server.send(msg, 0, msg.length, Number(udpID.split(":")[1]), udpID.split(":")[0], (error) => {
           if (error) {
             console.log(`Failed to send response to ${udpID}`);
@@ -47,7 +56,9 @@ function checkInactivityTimeout(udpID: string) {
             console.log(`inactivity sent to ${udpID}`)
           }
         });
+        let userId_temp = activeUserInfo.get(udpID)?.userId
         subTraffic(activeUserInfo.get(udpID)?.userId, activeUserInfo.get(udpID)?.traffic)
+        activeUserInfo.set(udpID, { userId: userId_temp, traffic: 0 })
         newServer.close();
         activeServers.delete(udpID);
         activeObfuscator.delete(udpID);
@@ -60,13 +71,14 @@ function checkInactivityTimeout(udpID: string) {
 
 // Create a map to store active UDP servers for each remote address
 interface userInfo {
-  userId: string,
+  userId: string | undefined,
   traffic: number
 }
 
 const activeServers: Map<string, dgram.Socket> = new Map();
 const activeObfuscator: Map<string, Obfuscator> = new Map();
 const activeUserInfo: Map<string, userInfo> = new Map();
+const activeUserPublicKey: Map<string, string> = new Map();
 const trafficInterval = setInterval(() => {
   console.log('updating traffic for all')
   activeUserInfo.forEach((value, key) => {
@@ -77,9 +89,11 @@ const trafficInterval = setInterval(() => {
 // Handle incoming messages
 server.on('message', async (message, remote) => {
   try {
+    message = await Buffer.from(encryptor.finalDecrypt(message.toString()))
     if (message.toString() === 'close') {
-      console.log(`Received close msg from ${remote.address}:${remote.port}`)
+      let userId_temp = activeUserInfo.get(`${remote.address}:${remote.port}`)?.userId
       subTraffic(activeUserInfo.get(`${remote.address}:${remote.port}`)?.userId, activeUserInfo.get(`${remote.address}:${remote.port}`)?.traffic)
+      activeUserInfo.set(`${remote.address}:${remote.port}`, { userId: userId_temp, traffic: 0 })
       activeServers.get(`${remote.address}:${remote.port}`)?.close()
       activeServers.delete(`${remote.address}:${remote.port}`);
       activeObfuscator.delete(`${remote.address}:${remote.port}`);
@@ -89,7 +103,13 @@ server.on('message', async (message, remote) => {
     }
     console.log(`Received handshake data from ${remote.address}:${remote.port}`);
     if (activeServers.get(`${remote.address}:${remote.port}`)) {
-      let response = activeServers.get(`${remote.address}:${remote.port}`)?.address().port
+      let remotePublicKey = activeUserPublicKey.get(`${remote.address}:${remote.port}`)
+      let responsePort = activeServers.get(`${remote.address}:${remote.port}`)?.address().port
+      if (!remotePublicKey || !responsePort) {
+        console.error(`Failed to get public key or port for ${remote.address}:${remote.port}`);
+        return -1
+      }
+      let response = encryptor.finalEncrypt(responsePort?.toString(), remotePublicKey)
       if (response && response.toString()) {
         server.send(response.toString(), 0, response.toString().length, remote.port, remote.address, (error) => {
           if (error) {
@@ -127,6 +147,7 @@ server.on('message', async (message, remote) => {
     // Add the new server to the active servers map
     activeObfuscator.set(`${remote.address}:${remote.port}`, obfuscator);
     activeUserInfo.set(`${remote.address}:${remote.port}`, { userId: handshakeData.userId, traffic: 0 })
+    activeUserPublicKey.set(`${remote.address}:${remote.port}`, handshakeData.publicKey)
     // Create a new UDP server
     const newServer = dgram.createSocket('udp4');
 
@@ -184,7 +205,13 @@ server.on('message', async (message, remote) => {
       console.log(`New UDP server listening on port ${newPort}`);
 
       // Send the new port back to the remote client
-      const response = Buffer.from(String(newPort));
+      let remotePublicKey = activeUserPublicKey.get(`${remote.address}:${remote.port}`)
+      if (!remotePublicKey) {
+        console.error(`Failed to get public key for ${remote.address}:${remote.port}`);
+        return -1
+      }
+      const responseStr = encryptor.finalEncrypt(newPort.toString(), remotePublicKey)
+      const response = Buffer.from(responseStr);
       server.send(response, 0, response.length, remote.port, remote.address, (error) => {
         if (error) {
           console.error(`Failed to send response to ${remote.address}:${remote.port}`);

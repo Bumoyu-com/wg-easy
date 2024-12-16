@@ -35,6 +35,7 @@ Object.defineProperty(exports, "__esModule", { value: true });
 const dgram = __importStar(require("dgram"));
 const Obfuscator_1 = require("../../Obfuscator");
 const updateDB_1 = require("../updateDB");
+const encryptor_1 = require("../encryptor");
 // //function to record concurrency client and max client
 // let clientStatOperation = function(ins:number) {
 //   let rawdata = fs.readFileSync('../clientStat.json', { encoding: 'utf8' });
@@ -48,18 +49,22 @@ const updateDB_1 = require("../updateDB");
 // }
 console.log(process.env.HANDSHAKE_PORT_UDP);
 const HOST_NAME = process.env.HOST_NAME;
+const HOST_IP = process.env.HOST_IP;
 const PORT = Number(process.env.HANDSHAKE_PORT_UDP ? process.env.HANDSHAKE_PORT_UDP : 12301); // The port on which the initial UDP server listens
 const TIMEOUT_DURATION = 1200000; // Time in milliseconds after which the new UDP server shuts down if no data is received
 const LOCALWG_PORT = 51820;
 const LOCALWG_ADDRESS = '127.0.0.1';
 const TRAFFIC_INTERVAL = 600000;
+const PASSWORD = process.env.PASSWORD;
 // Create a UDP server
 const server = dgram.createSocket('udp4');
+const encryptor = new encryptor_1.Encryptor(PASSWORD);
+(0, updateDB_1.updateServerInfo)(HOST_NAME, HOST_IP, PORT, 8088, encryptor.getPublicKey());
 // Map to store the last received message timestamp for each remote address
 const lastMessageTimestamps = new Map();
 // Function to check if the new UDP server should shut down due to inactivity
 function checkInactivityTimeout(udpID) {
-    var _a, _b;
+    var _a, _b, _c;
     const lastMessageTimestamp = lastMessageTimestamps.get(udpID);
     if (lastMessageTimestamp) {
         const currentTime = Date.now();
@@ -67,7 +72,12 @@ function checkInactivityTimeout(udpID) {
             console.log(`Shutting down UDP server for ${udpID} due to inactivity`);
             const newServer = activeServers.get(udpID);
             if (newServer) {
-                let msg = "inactivity";
+                let remotePublicKey = activeUserPublicKey.get(udpID);
+                if (!remotePublicKey) {
+                    console.error(`Failed to get public key for ${udpID}`);
+                    return -1;
+                }
+                let msg = encryptor.finalEncrypt("inactivity", remotePublicKey);
                 server.send(msg, 0, msg.length, Number(udpID.split(":")[1]), udpID.split(":")[0], (error) => {
                     if (error) {
                         console.log(`Failed to send response to ${udpID}`);
@@ -76,7 +86,9 @@ function checkInactivityTimeout(udpID) {
                         console.log(`inactivity sent to ${udpID}`);
                     }
                 });
-                (0, updateDB_1.subTraffic)((_a = activeUserInfo.get(udpID)) === null || _a === void 0 ? void 0 : _a.userId, (_b = activeUserInfo.get(udpID)) === null || _b === void 0 ? void 0 : _b.traffic);
+                let userId_temp = (_a = activeUserInfo.get(udpID)) === null || _a === void 0 ? void 0 : _a.userId;
+                (0, updateDB_1.subTraffic)((_b = activeUserInfo.get(udpID)) === null || _b === void 0 ? void 0 : _b.userId, (_c = activeUserInfo.get(udpID)) === null || _c === void 0 ? void 0 : _c.traffic);
+                activeUserInfo.set(udpID, { userId: userId_temp, traffic: 0 });
                 newServer.close();
                 activeServers.delete(udpID);
                 activeObfuscator.delete(udpID);
@@ -89,6 +101,7 @@ function checkInactivityTimeout(udpID) {
 const activeServers = new Map();
 const activeObfuscator = new Map();
 const activeUserInfo = new Map();
+const activeUserPublicKey = new Map();
 const trafficInterval = setInterval(() => {
     console.log('updating traffic for all');
     activeUserInfo.forEach((value, key) => {
@@ -98,12 +111,14 @@ const trafficInterval = setInterval(() => {
 }, TRAFFIC_INTERVAL);
 // Handle incoming messages
 server.on('message', (message, remote) => __awaiter(void 0, void 0, void 0, function* () {
-    var _a, _b, _c, _d;
+    var _a, _b, _c, _d, _e;
     try {
+        message = yield Buffer.from(encryptor.finalDecrypt(message.toString()));
         if (message.toString() === 'close') {
-            console.log(`Received close msg from ${remote.address}:${remote.port}`);
-            (0, updateDB_1.subTraffic)((_a = activeUserInfo.get(`${remote.address}:${remote.port}`)) === null || _a === void 0 ? void 0 : _a.userId, (_b = activeUserInfo.get(`${remote.address}:${remote.port}`)) === null || _b === void 0 ? void 0 : _b.traffic);
-            (_c = activeServers.get(`${remote.address}:${remote.port}`)) === null || _c === void 0 ? void 0 : _c.close();
+            let userId_temp = (_a = activeUserInfo.get(`${remote.address}:${remote.port}`)) === null || _a === void 0 ? void 0 : _a.userId;
+            (0, updateDB_1.subTraffic)((_b = activeUserInfo.get(`${remote.address}:${remote.port}`)) === null || _b === void 0 ? void 0 : _b.userId, (_c = activeUserInfo.get(`${remote.address}:${remote.port}`)) === null || _c === void 0 ? void 0 : _c.traffic);
+            activeUserInfo.set(`${remote.address}:${remote.port}`, { userId: userId_temp, traffic: 0 });
+            (_d = activeServers.get(`${remote.address}:${remote.port}`)) === null || _d === void 0 ? void 0 : _d.close();
             activeServers.delete(`${remote.address}:${remote.port}`);
             activeObfuscator.delete(`${remote.address}:${remote.port}`);
             activeUserInfo.delete(`${remote.address}:${remote.port}`);
@@ -112,7 +127,13 @@ server.on('message', (message, remote) => __awaiter(void 0, void 0, void 0, func
         }
         console.log(`Received handshake data from ${remote.address}:${remote.port}`);
         if (activeServers.get(`${remote.address}:${remote.port}`)) {
-            let response = (_d = activeServers.get(`${remote.address}:${remote.port}`)) === null || _d === void 0 ? void 0 : _d.address().port;
+            let remotePublicKey = activeUserPublicKey.get(`${remote.address}:${remote.port}`);
+            let responsePort = (_e = activeServers.get(`${remote.address}:${remote.port}`)) === null || _e === void 0 ? void 0 : _e.address().port;
+            if (!remotePublicKey || !responsePort) {
+                console.error(`Failed to get public key or port for ${remote.address}:${remote.port}`);
+                return -1;
+            }
+            let response = encryptor.finalEncrypt(responsePort === null || responsePort === void 0 ? void 0 : responsePort.toString(), remotePublicKey);
             if (response && response.toString()) {
                 server.send(response.toString(), 0, response.toString().length, remote.port, remote.address, (error) => {
                     if (error) {
@@ -146,6 +167,7 @@ server.on('message', (message, remote) => __awaiter(void 0, void 0, void 0, func
         // Add the new server to the active servers map
         activeObfuscator.set(`${remote.address}:${remote.port}`, obfuscator);
         activeUserInfo.set(`${remote.address}:${remote.port}`, { userId: handshakeData.userId, traffic: 0 });
+        activeUserPublicKey.set(`${remote.address}:${remote.port}`, handshakeData.publicKey);
         // Create a new UDP server
         const newServer = dgram.createSocket('udp4');
         // Add the new server to the active servers map
@@ -203,7 +225,13 @@ server.on('message', (message, remote) => __awaiter(void 0, void 0, void 0, func
             const newPort = newServer.address().port;
             console.log(`New UDP server listening on port ${newPort}`);
             // Send the new port back to the remote client
-            const response = Buffer.from(String(newPort));
+            let remotePublicKey = activeUserPublicKey.get(`${remote.address}:${remote.port}`);
+            if (!remotePublicKey) {
+                console.error(`Failed to get public key for ${remote.address}:${remote.port}`);
+                return -1;
+            }
+            const responseStr = encryptor.finalEncrypt(newPort.toString(), remotePublicKey);
+            const response = Buffer.from(responseStr);
             server.send(response, 0, response.length, remote.port, remote.address, (error) => {
                 if (error) {
                     console.error(`Failed to send response to ${remote.address}:${remote.port}`);

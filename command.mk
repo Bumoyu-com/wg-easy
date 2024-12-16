@@ -37,3 +37,9 @@ docker run -itd --rm --privileged \
 
 香港digitalvirt 不用实名 19元 1000G流量
 
+
+docker run -d --name=morph_vpn_server --network host --restart unless-stopped morph_vpn_server:0.0.1
+
+sed -i "s/12301/8888/g" process.json
+sed -i "s/8088/9999/g" process.json
+"pm2-runtime", "start", "process.json"
