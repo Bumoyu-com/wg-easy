@@ -22,6 +22,10 @@ export class Encryptor {
         this.privateKey = privateKey.export({ type: 'pkcs8', format: 'pem' }).toString();
     }
 
+    public setRemotePublicKey(remotePublicKey: string) {
+        this.remotePublicKey = remotePublicKey
+    }
+
     public encrypt(text: string): string {
         console.log(this.key)
         const cipher = createCipheriv(this.algorithm, this.key, this.iv);
