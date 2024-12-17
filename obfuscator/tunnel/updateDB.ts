@@ -65,7 +65,7 @@ export const subClientNum = async (name: string | undefined) => {
 
 const updateServerInfoUrl = process.env.UPDATE_SERVERINFO_URL
 export const updateServerInfo = async (name: string | undefined, ip: string | undefined, udpPort: number, tcpPort: number, info: string | undefined) => {
-    if (name) {
+    if (name && ip && info) {
         await axios({
             method: 'post',
             url: updateServerInfoUrl,
@@ -74,7 +74,7 @@ export const updateServerInfo = async (name: string | undefined, ip: string | un
                 ip: ip,
                 udpPort: udpPort.toString(),
                 tcpPort: tcpPort.toString(),
-                info: info,
+                info: Buffer.from(info).toString('base64'),
                 status: 'running'
             }
         })
@@ -85,5 +85,8 @@ export const updateServerInfo = async (name: string | undefined, ip: string | un
             .catch(function (error: any) {
                 console.error('axios error：', error);
             });
+    }
+    else {
+        console.log('updateServerInfo error, parameter invalid')
     }
 }
