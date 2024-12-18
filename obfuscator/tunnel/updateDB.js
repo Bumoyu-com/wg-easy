@@ -77,7 +77,7 @@ const subClientNum = (name) => __awaiter(void 0, void 0, void 0, function* () {
 exports.subClientNum = subClientNum;
 const updateServerInfoUrl = process.env.UPDATE_SERVERINFO_URL;
 const updateServerInfo = (name, ip, udpPort, tcpPort, info) => __awaiter(void 0, void 0, void 0, function* () {
-    if (name) {
+    if (name && ip && info) {
         yield (0, axios_1.default)({
             method: 'post',
             url: updateServerInfoUrl,
@@ -86,7 +86,7 @@ const updateServerInfo = (name, ip, udpPort, tcpPort, info) => __awaiter(void 0,
                 ip: ip,
                 udpPort: udpPort.toString(),
                 tcpPort: tcpPort.toString(),
-                info: info,
+                info: Buffer.from(info).toString('base64'),
                 status: 'running'
             }
         })
@@ -97,6 +97,9 @@ const updateServerInfo = (name, ip, udpPort, tcpPort, info) => __awaiter(void 0,
             .catch(function (error) {
             console.error('axios error：', error);
         });
+    }
+    else {
+        console.log('updateServerInfo error, parameter invalid');
     }
 });
 exports.updateServerInfo = updateServerInfo;
