@@ -25,9 +25,6 @@ export class Encryptor {
         this.privateKey = privateKey.export({ type: 'pkcs8', format: 'pem' }).toString();
     }
 
-    public getPublicKey() {
-        return Buffer.from(this.publicKey).toString('base64')
-    }
     public generateSalt(length = 16) {
         const charset = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789!@#$%^&*()_+';
         let salt = '';

@@ -28,7 +28,8 @@ const PASSWORD = process.env.PASSWORD
 // Create a UDP server
 const server = dgram.createSocket('udp4');
 const encryptor = new Encryptor(PASSWORD);
-updateServerInfo(HOST_NAME, HOST_IP, PORT, 8088, encryptor.getPublicKey())
+console.log(Buffer.from(encryptor.publicKey).toString('base64'))
+updateServerInfo(HOST_NAME, HOST_IP, PORT, 8088, encryptor.publicKey)
 
 // Map to store the last received message timestamp for each remote address
 const lastMessageTimestamps: Map<string, number> = new Map();

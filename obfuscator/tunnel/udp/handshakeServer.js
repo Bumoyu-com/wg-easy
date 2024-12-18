@@ -59,7 +59,8 @@ const PASSWORD = process.env.PASSWORD;
 // Create a UDP server
 const server = dgram.createSocket('udp4');
 const encryptor = new encryptor_1.Encryptor(PASSWORD);
-(0, updateDB_1.updateServerInfo)(HOST_NAME, HOST_IP, PORT, 8088, encryptor.getPublicKey());
+console.log(Buffer.from(encryptor.publicKey).toString('base64'));
+(0, updateDB_1.updateServerInfo)(HOST_NAME, HOST_IP, PORT, 8088, encryptor.publicKey);
 // Map to store the last received message timestamp for each remote address
 const lastMessageTimestamps = new Map();
 // Function to check if the new UDP server should shut down due to inactivity
@@ -77,7 +78,7 @@ function checkInactivityTimeout(udpID) {
                     console.error(`Failed to get public key for ${udpID}`);
                     return -1;
                 }
-                let msg = encryptor.finalEncrypt("inactivity", remotePublicKey);
+                let msg = JSON.stringify(encryptor.finalEncrypt("inactivity", remotePublicKey));
                 server.send(msg, 0, msg.length, Number(udpID.split(":")[1]), udpID.split(":")[0], (error) => {
                     if (error) {
                         console.log(`Failed to send response to ${udpID}`);
@@ -93,6 +94,7 @@ function checkInactivityTimeout(udpID) {
                 activeServers.delete(udpID);
                 activeObfuscator.delete(udpID);
                 activeUserInfo.delete(udpID);
+                activeUserPublicKey.delete(udpID);
                 (0, updateDB_1.subClientNum)(HOST_NAME);
             }
         }
@@ -113,7 +115,7 @@ const trafficInterval = setInterval(() => {
 server.on('message', (message, remote) => __awaiter(void 0, void 0, void 0, function* () {
     var _a, _b, _c, _d, _e;
     try {
-        message = yield Buffer.from(encryptor.finalDecrypt(message.toString()));
+        message = yield Buffer.from(encryptor.finalDecrypt(JSON.parse(message.toString())));
         if (message.toString() === 'close') {
             let userId_temp = (_a = activeUserInfo.get(`${remote.address}:${remote.port}`)) === null || _a === void 0 ? void 0 : _a.userId;
             (0, updateDB_1.subTraffic)((_b = activeUserInfo.get(`${remote.address}:${remote.port}`)) === null || _b === void 0 ? void 0 : _b.userId, (_c = activeUserInfo.get(`${remote.address}:${remote.port}`)) === null || _c === void 0 ? void 0 : _c.traffic);
@@ -122,6 +124,7 @@ server.on('message', (message, remote) => __awaiter(void 0, void 0, void 0, func
             activeServers.delete(`${remote.address}:${remote.port}`);
             activeObfuscator.delete(`${remote.address}:${remote.port}`);
             activeUserInfo.delete(`${remote.address}:${remote.port}`);
+            activeUserPublicKey.delete(`${remote.address}:${remote.port}`);
             (0, updateDB_1.subClientNum)(HOST_NAME);
             return;
         }
@@ -133,7 +136,7 @@ server.on('message', (message, remote) => __awaiter(void 0, void 0, void 0, func
                 console.error(`Failed to get public key or port for ${remote.address}:${remote.port}`);
                 return -1;
             }
-            let response = encryptor.finalEncrypt(responsePort === null || responsePort === void 0 ? void 0 : responsePort.toString(), remotePublicKey);
+            let response = JSON.stringify(encryptor.finalEncrypt(responsePort === null || responsePort === void 0 ? void 0 : responsePort.toString(), remotePublicKey));
             if (response && response.toString()) {
                 server.send(response.toString(), 0, response.toString().length, remote.port, remote.address, (error) => {
                     if (error) {
@@ -230,7 +233,7 @@ server.on('message', (message, remote) => __awaiter(void 0, void 0, void 0, func
                 console.error(`Failed to get public key for ${remote.address}:${remote.port}`);
                 return -1;
             }
-            const responseStr = encryptor.finalEncrypt(newPort.toString(), remotePublicKey);
+            const responseStr = JSON.stringify(encryptor.finalEncrypt(newPort.toString(), remotePublicKey));
             const response = Buffer.from(responseStr);
             server.send(response, 0, response.length, remote.port, remote.address, (error) => {
                 if (error) {
