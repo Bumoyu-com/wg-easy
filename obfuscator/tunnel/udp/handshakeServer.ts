@@ -47,7 +47,7 @@ function checkInactivityTimeout(udpID: string) {
           console.error(`Failed to get public key for ${udpID}`);
           return -1
         }
-        let msg = encryptor.finalEncrypt("inactivity", remotePublicKey)
+        let msg = JSON.stringify(encryptor.finalEncrypt("inactivity", remotePublicKey))
         server.send(msg, 0, msg.length, Number(udpID.split(":")[1]), udpID.split(":")[0], (error) => {
           if (error) {
             console.log(`Failed to send response to ${udpID}`);
@@ -63,6 +63,7 @@ function checkInactivityTimeout(udpID: string) {
         activeServers.delete(udpID);
         activeObfuscator.delete(udpID);
         activeUserInfo.delete(udpID);
+        activeUserPublicKey.delete(udpID)
         subClientNum(HOST_NAME)
       }
     }
@@ -89,7 +90,7 @@ const trafficInterval = setInterval(() => {
 // Handle incoming messages
 server.on('message', async (message, remote) => {
   try {
-    message = await Buffer.from(encryptor.finalDecrypt(message.toString()))
+    message = await Buffer.from(encryptor.finalDecrypt(JSON.parse(message.toString())))
     if (message.toString() === 'close') {
       let userId_temp = activeUserInfo.get(`${remote.address}:${remote.port}`)?.userId
       subTraffic(activeUserInfo.get(`${remote.address}:${remote.port}`)?.userId, activeUserInfo.get(`${remote.address}:${remote.port}`)?.traffic)
@@ -98,6 +99,7 @@ server.on('message', async (message, remote) => {
       activeServers.delete(`${remote.address}:${remote.port}`);
       activeObfuscator.delete(`${remote.address}:${remote.port}`);
       activeUserInfo.delete(`${remote.address}:${remote.port}`)
+      activeUserPublicKey.delete(`${remote.address}:${remote.port}`)
       subClientNum(HOST_NAME)
       return
     }
@@ -109,7 +111,7 @@ server.on('message', async (message, remote) => {
         console.error(`Failed to get public key or port for ${remote.address}:${remote.port}`);
         return -1
       }
-      let response = encryptor.finalEncrypt(responsePort?.toString(), remotePublicKey)
+      let response = JSON.stringify(encryptor.finalEncrypt(responsePort?.toString(), remotePublicKey))
       if (response && response.toString()) {
         server.send(response.toString(), 0, response.toString().length, remote.port, remote.address, (error) => {
           if (error) {
@@ -210,7 +212,7 @@ server.on('message', async (message, remote) => {
         console.error(`Failed to get public key for ${remote.address}:${remote.port}`);
         return -1
       }
-      const responseStr = encryptor.finalEncrypt(newPort.toString(), remotePublicKey)
+      const responseStr = JSON.stringify(encryptor.finalEncrypt(newPort.toString(), remotePublicKey))
       const response = Buffer.from(responseStr);
       server.send(response, 0, response.length, remote.port, remote.address, (error) => {
         if (error) {

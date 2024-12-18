@@ -1,23 +1,21 @@
 // EncryptionClient.ts
-import { createCipheriv, createDecipheriv, randomBytes, generateKeyPairSync, publicEncrypt, privateDecrypt, scryptSync } from 'crypto';
+import { createCipheriv, createDecipheriv, randomBytes, generateKeyPairSync, scryptSync, publicEncrypt, privateDecrypt } from 'crypto';
 
 export class Encryptor {
     private algorithm: string;
-    private key: Buffer;
-    private iv: Buffer;
-    private publicKey: string;
-    private privateKey: string;
-    private salt: string;
+    public publicKey: string;
+    public privateKey: string;
+    public remotePublicKey: string = '';
+    public password: string;
+
 
     constructor(password: string | undefined) {
         this.algorithm = 'aes-256-cbc';
-        this.salt = `aB3$eF7!gH9@jK2#lM5%qR8^tW1*zX0&`
-        this.iv = randomBytes(16); // Initialization vector
         if(password) {
-            this.key = scryptSync(password, this.salt, 32)
+            this.password = password
         }
         else {
-            this.key = scryptSync('bumoyu123', this.salt, 32)
+            this.password = 'bumoyu123'
         }
         // Generate RSA key pair
         const { publicKey, privateKey } = generateKeyPairSync('rsa', {
@@ -27,45 +25,64 @@ export class Encryptor {
         this.privateKey = privateKey.export({ type: 'pkcs8', format: 'pem' }).toString();
     }
 
-    public getPublicKey(): string {
-        return this.publicKey;
+    public getPublicKey() {
+        return Buffer.from(this.publicKey).toString('base64')
+    }
+    public generateSalt(length = 16) {
+        const charset = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789!@#$%^&*()_+';
+        let salt = '';
+        for (let i = 0; i < length; i++) {
+            const randomIndex = Math.floor(Math.random() * charset.length);
+            salt += charset[randomIndex];
+        }
+        return salt;
     }
 
-    public encrypt(text: string): string {
-        console.log(this.key)
-        const cipher = createCipheriv(this.algorithm, this.key, this.iv);
+    public encrypt(text: string, key: Buffer, iv: Buffer): string {
+        const cipher = createCipheriv(this.algorithm, key, iv);
         let encrypted = cipher.update(text, 'utf8', 'hex');
         encrypted += cipher.final('hex');
-        return `${this.iv.toString('hex')}:${encrypted}`; // Return IV with encrypted text
+        return encrypted; // Return encrypted text
     }
 
-    public decrypt(encryptedText: string): string {
-        const [iv, encrypted] = encryptedText.split(':');
-        const decipher = createDecipheriv(this.algorithm, this.key, Buffer.from(iv, 'hex'));
-        let decrypted = decipher.update(encrypted, 'hex', 'utf8');
+    public decrypt(encryptedText: string, key: Buffer, iv: Buffer): string {
+        const decipher = createDecipheriv(this.algorithm, key, iv);
+        let decrypted = decipher.update(encryptedText, 'hex', 'utf8');
         decrypted += decipher.final('utf8');
         return decrypted;
     }
 
-    public encryptWithPublicKey(data: string, remotePublicKey: string): string {
-        const encryptedData = publicEncrypt(remotePublicKey.replace(/\\n/g, '\n'), Buffer.from(data));
+    public encryptWithPublicKey(data: string, remotePublicKey : string): string {
+        const encryptedData = publicEncrypt(remotePublicKey, Buffer.from(data, 'base64'));
         return encryptedData.toString('base64'); // Return base64 encoded string
     }
 
     public decryptWithPrivateKey(encryptedData: string): string {
         const decryptedData = privateDecrypt(this.privateKey, Buffer.from(encryptedData, 'base64'));
-        return decryptedData.toString('utf8'); // Return decrypted string
+        return decryptedData.toString('base64'); // Return decrypted string
     }
 
-    public finalEncrypt(text: string, remotePublicKey: string): string {
-        const layerOne = this.encrypt(text);
-        const layerTwo = this.encryptWithPublicKey(layerOne, remotePublicKey);
-        return layerTwo
+    public finalEncrypt (text: string, remotePublicKey : string) {
+        const that = this;
+        let salt = this.generateSalt();
+        let key = scryptSync(that.password, salt, 32); // Generate a key from the password
+        let iv = randomBytes(16); // Initialization vector
+        let d_send = that.encrypt(text, key, iv)
+        let k_send = that.encryptWithPublicKey(key.toString('base64'), remotePublicKey)
+        let i_send = iv.toString('base64')
+        let data = {
+            d: d_send,
+            k: k_send,
+            i: i_send
+        }
+        return data
     }
 
-    public finalDecrypt(text: string): string {
-        const layerOne = this.decryptWithPrivateKey(text);
-        const layerTwo = this.decrypt(layerOne);
-        return layerTwo
+    public finalDecrypt (data: any) {
+        const { d, k, i } = data
+        let k_receive = this.decryptWithPrivateKey(k)
+        let i_receive = Buffer.from(i, 'base64')
+        let d_receive = this.decrypt(d, Buffer.from(k_receive, 'base64'), i_receive) //decrypt(d, k_receive, i_receive)
+        return d_receive
     }
 }

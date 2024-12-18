@@ -1,6 +1,5 @@
 
 import axios, { AxiosResponse } from 'axios';
-
 const subTrafficUrl = process.env.SUB_TRAFFIC_URL
 
 export const subTraffic = async (userId: string | undefined, traffic: number | undefined) => {
